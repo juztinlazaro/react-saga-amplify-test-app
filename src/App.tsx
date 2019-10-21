@@ -3,6 +3,7 @@ import { API, graphqlOperation } from 'aws-amplify';
 import { withAuthenticator } from 'aws-amplify-react';
 import { createNote, deleteNote, updateNote } from './graphql/mutations';
 import { listNotes } from './graphql/queries';
+import { onCreateNote, onDeleteNote, onUpdateNote } from './graphql/subscriptions';
 
 const App: React.FC = () => {
   const [id, setId] = useState('');
@@ -13,6 +14,52 @@ const App: React.FC = () => {
   useEffect(() => {
     handleGetNoteList();
   }, []);
+
+  useEffect(() => {
+    const onCreateNoteListener = API.graphql(graphqlOperation(onCreateNote)).subscribe({
+      next: (noteData: any) => {
+        const newNote = noteData.value.data.onCreateNote;
+        const prevNotes = notes.filter((item: any) => item.id !== newNote.id);
+
+        const updateNotes = [...prevNotes, newNote];
+        setNotes(updateNotes);
+      }
+    });
+
+    return () => onCreateNoteListener.unsubscribe();
+  }, [notes]);
+
+  useEffect(() => {
+    const onDeleteNoteListener = API.graphql(graphqlOperation(onDeleteNote)).subscribe({
+      next: (noteData: any) => {
+        const deletedNote = noteData.value.data.onDeleteNote;
+        const updateNotes = notes.filter((item: any) => item.id !== deletedNote.id);
+        setNotes(updateNotes);
+        setLoading(false);
+      }
+    });
+
+    return () => onDeleteNoteListener.unsubscribe();
+  }, [notes]);
+
+  useEffect(() => {
+    const onUpdateNoteListener = API.graphql(graphqlOperation(onUpdateNote)).subscribe({
+      next: (noteData: any) => {
+        const updatedNote = noteData.value.data.onUpdateNote;
+        const updatedNotes = notes.map((item: any) => {
+          if (item.id === updatedNote.id) {
+            return updatedNote;
+          }
+
+          return item;
+        });
+
+        setNotes(updatedNotes);
+      }
+    });
+
+    return () => onUpdateNoteListener.unsubscribe();
+  }, [notes]);
 
   const handleGetNoteList = async () => {
     setLoading(true);
@@ -44,20 +91,19 @@ const App: React.FC = () => {
 
     // check if we have an existing notes, if so update it
     if (hasExistingNote()) {
-      console.log('note update!');
       handleUpdateNote();
     } else {
-      const result = await API.graphql(
+      await API.graphql(
         graphqlOperation(createNote, {
           input
         })
       );
 
-      const newNote = result.data.createNote;
+      // const newNote = result.data.createNote;
 
-      setNotes((prevNotes: any) => {
-        return [newNote, ...prevNotes];
-      });
+      // setNotes((prevNotes: any) => {
+      //   return [newNote, ...prevNotes];
+      // });
     }
 
     setNote('');
@@ -71,10 +117,9 @@ const App: React.FC = () => {
         input: { id }
       })
     ).then((result: any) => {
-      const deleteNoteId = result.data.deleteNote.id;
-      const updateNote = notes.filter((item: any) => item.id !== deleteNoteId);
-      setNotes(updateNote);
-      setLoading(false);
+      // const deleteNoteId = result.data.deleteNote.id;
+      // const updateNote = notes.filter((item: any) => item.id !== deleteNoteId);
+      // setNotes(updateNote);
     });
   };
 
@@ -91,17 +136,17 @@ const App: React.FC = () => {
 
     const result = await API.graphql(graphqlOperation(updateNote, { input }));
 
-    const updatedNote = result.data.updateNote;
+    // const updatedNote = result.data.updateNote;
 
-    const updatedNotes = notes.map((item: any) => {
-      if (item.id === updatedNote.id) {
-        return updatedNote;
-      }
+    // const updatedNotes = notes.map((item: any) => {
+    //   if (item.id === updatedNote.id) {
+    //     return updatedNote;
+    //   }
 
-      return item;
-    });
+    //   return item;
+    // });
 
-    setNotes(updatedNotes);
+    // setNotes(updatedNotes);
     setNote('');
     setId('');
   };
@@ -121,7 +166,7 @@ const App: React.FC = () => {
           onChange={handleChangeNote}
         />
         <button className="pa2 f4" type="submit">
-          Add Note
+          {id ? ' Update Note' : ' Add Note'}
         </button>
       </form>
 
