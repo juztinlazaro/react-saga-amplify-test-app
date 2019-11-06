@@ -7,4 +7,4 @@
 1. `amplify publish` - will build all your local backend and frontend resources (if you have hosting category added) and provision it in the cloud.
 1. `amplify console` - cheat command redirecting to your aws console service
 1. `amplify update {servce}` - update amplify 
-1. `amplify add hosting` - deploy in s3
+1. `amplify add hosting` - add configuration in hosting in s3
